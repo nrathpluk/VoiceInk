@@ -1,27 +1,38 @@
-# ThaiVoice — แอพถอดเสียงไทยลง Clipboard
+# ThaiVoice
 
-แอพ desktop สำหรับ Windows กด hotkey อัดเสียง → Whisper ถอดเป็นข้อความไทย → copy เข้า clipboard อัตโนมัติ ทำงานอยู่ใน system tray
+แอปถอดเสียงไทยเป็นข้อความ สำหรับ Windows
 
-## ความต้องการ
+<!-- TODO: ใส่ GIF / screenshot ที่นี่ -->
+![demo](docs/demo.gif)
+
+## ฟีเจอร์
+
+- หน้าต่างแคปซูลลอย always-on-top
+- Hotkey ลัด (default `Ctrl+Shift+Space`)
+- ใช้ Whisper offline ผ่าน faster-whisper — ไม่ต้องต่อเน็ต ไม่ต้องส่งเสียงขึ้น cloud
+- ถอดเสร็จ copy ลง clipboard อัตโนมัติ — กด `Ctrl+V` วางในแอปไหนก็ได้
+- ประวัติ 10 ข้อความล่าสุด คลิกเพื่อ copy ซ้ำ
+- ลากย้ายตำแหน่งได้
+- เลือก model ได้: `tiny` / `base` / `small` / `medium` / `large-v3`
+- Live mode — preview ข้อความระหว่างพูด
+
+## สิ่งที่ต้องมี
 
 - Windows 10 / 11
-- Python 3.10 ขึ้นไป
+- Python 3.10+
 - ไมโครโฟน
-- (แนะนำ) GPU NVIDIA + CUDA สำหรับ model ใหญ่ ถ้าไม่มีจะใช้ CPU
+- (แนะนำ) GPU NVIDIA + CUDA สำหรับ model ใหญ่
 
-## ติดตั้ง
+## เริ่มใช้งาน
 
 ```bat
+git clone https://github.com/nrathpluk/VoiceInk.git
+cd VoiceInk
 pip install -r requirements.txt
-```
-
-## รันจาก source
-
-```bat
 python main.py
 ```
 
-ไอคอนไมค์สีเทาจะปรากฏใน system tray (มุมขวาล่าง)
+แคปซูลลอยจะโผล่มุมขวาล่าง
 
 ## Build เป็น .exe
 
@@ -29,48 +40,38 @@ python main.py
 build.bat
 ```
 
-ได้ไฟล์ `dist\ThaiVoice.exe` (single file, ไม่เปิด console)
+ได้ไฟล์ `dist\ThaiVoice.exe` — single file, ไม่เปิด console
 
 ## วิธีใช้
 
-1. กด `Ctrl+Shift+Space` → ไอคอนเปลี่ยนเป็น **สีแดง** = กำลังอัด
+1. กด hotkey (`Ctrl+Shift+Space`) → แคปซูลเปลี่ยนเป็นสีแดง = กำลังอัด
 2. พูดภาษาไทย
-3. กด `Ctrl+Shift+Space` อีกครั้ง → ไอคอน **สีเหลือง** = กำลังถอด
-4. เสร็จ → ไอคอนกลับ **สีเทา** + Toast แจ้งว่า copied แล้ว
-5. กด `Ctrl+V` วางในแอพอื่นได้เลย
+3. กด hotkey อีกครั้ง → ถอดเสียง → copy ลง clipboard อัตโนมัติ
+4. กด `Ctrl+V` วางในแอปอื่น
+5. คลิกปุ่มไมค์บนแคปซูล = toggle เหมือน hotkey
+6. คลิกขวาบนแคปซูล = เมนู (เปลี่ยน model, hotkey, ดู history, เปิด live mode, quit)
+7. ลาก body ของแคปซูลเพื่อย้ายตำแหน่ง
 
-## Tray Menu (คลิกขวาที่ไอคอน)
+## ตั้งค่า
 
-- **Model** — เลือก `tiny` / `base` / `small` / `medium` / `large-v3`
-  - `tiny` เร็วสุด แม่นยำต่ำสุด
-  - `base` (default) สมดุลดี
-  - `large-v3` แม่นยำสุด แต่ช้าและใช้ RAM/VRAM เยอะ
-- **History** — ดู 5 ข้อความล่าสุด คลิกเพื่อ copy ซ้ำ
-- **Set hotkey...** — เปลี่ยน hotkey เช่น `ctrl+alt+r`, `f9`
-- **Quit** — ออกจากโปรแกรม
+| Config | ค่า default | เปลี่ยนที่ |
+|---|---|---|
+| Hotkey | `ctrl+shift+space` | คลิกขวา → `Hotkey:...` |
+| Model | `base` | คลิกขวา → `Model` |
+| ภาษา | `th` (hardcode) | แก้ `language="th"` ใน `main.py` |
+| Live mode | ปิด | คลิกขวา → `Live mode (streaming)` |
 
-## หมายเหตุ
+ครั้งแรกของแต่ละ model จะ download อัตโนมัติ (~75MB ถึง ~3GB) เก็บที่ `%USERPROFILE%\.cache\huggingface\`
 
-- **ครั้งแรกที่ใช้แต่ละ model จะ download อัตโนมัติ** (~75MB สำหรับ `tiny` ถึง ~3GB สำหรับ `large-v3`) เก็บที่ `%USERPROFILE%\.cache\huggingface\` ระหว่าง download แอพอาจค้างชั่วคราว มี toast แจ้งก่อน
-- ใช้ **faster-whisper** (CTranslate2) เร็วกว่า openai-whisper ~4 เท่า
-- ถ้ามี NVIDIA GPU + CUDA จะ auto ใช้ ไม่ต้องตั้งค่า
+## เทคโนโลยีที่ใช้
 
-## Troubleshoot
+- [faster-whisper](https://github.com/SYSTRAN/faster-whisper) — Whisper บน CTranslate2 เร็วกว่า openai-whisper ~4 เท่า
+- [tkinter](https://docs.python.org/3/library/tkinter.html) — UI แคปซูลลอย
+- [sounddevice](https://python-sounddevice.readthedocs.io/) — อัดเสียงจากไมค์
+- [keyboard](https://github.com/boppreh/keyboard) — global hotkey
+- [pyperclip](https://github.com/asweigart/pyperclip) — copy ลง clipboard
+- [winotify](https://github.com/versa-syahptr/winotify) — Windows toast notification
 
-| ปัญหา | แก้ |
-|------|-----|
-| Hotkey ไม่ทำงาน | รันเป็น Administrator (`keyboard` lib ต้องการสิทธิ์ admin บางเครื่อง) |
-| ไม่มีเสียง / mic ไม่เจอ | ตรวจ Settings → System → Sound → Input device |
-| Model load fail | เช็ค RAM พอไหม / ลอง model เล็กลง / ลบ cache แล้ว download ใหม่ |
-| .exe ใหญ่มาก | ปกติ ~200-500MB เพราะรวม CTranslate2 + dependencies |
-| CUDA error | ติดตั้ง cuDNN ให้ตรง version หรือใช้ CPU mode (model จะใช้ int8 อัตโนมัติ) |
+## License
 
-## โครงสร้างไฟล์
-
-```
-thai-voice-app/
-├── main.py            # โค้ดทั้งหมด
-├── requirements.txt   # Python packages
-├── build.bat          # script build .exe
-└── README.md          # ไฟล์นี้
-```
+MIT
