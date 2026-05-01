@@ -4,4 +4,5 @@ numpy>=1.24
 keyboard>=0.13.5
 pyperclip>=1.8.2
 winotify>=1.1.0
+pythainlp>=5.0.0  # Thai word tokenizer for inserting word breaks
 pillow>=10.0.0  # build-time only, for make_icon.py

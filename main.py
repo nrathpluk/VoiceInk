@@ -2,6 +2,7 @@
 import logging
 import math
 import os
+import re
 import sys
 import threading
 import traceback
@@ -96,6 +97,9 @@ from faster_whisper import WhisperModel
 DEFAULT_HOTKEY = "ctrl+shift+space"
 DEFAULT_MODEL = "base"
 MODELS = ["tiny", "base", "small", "medium", "large-v3"]
+DEFAULT_LANGUAGE = "th"
+LANGUAGES = ["auto", "th", "en"]   # "auto" = let Whisper detect (+0.5-1s)
+LANGUAGE_LABELS = {"auto": "Auto-detect", "th": "ไทย (Thai)", "en": "English"}
 SAMPLE_RATE = 16000
 HISTORY_MAX = 10
 APP_NAME = "ThaiVoice"
@@ -134,6 +138,54 @@ COLORS = {
     "glow": "#2a1d4a",
     "preview_bg": "#15151f",
 }
+
+
+# ---------- Thai tokenizer (lazy) ----------
+_thai_tokenize_fn = None
+_thai_tokenize_failed = False
+
+
+def _get_thai_tokenizer():
+    """Lazy-load pythainlp.word_tokenize. Cache success/failure."""
+    global _thai_tokenize_fn, _thai_tokenize_failed
+    if _thai_tokenize_fn is not None or _thai_tokenize_failed:
+        return _thai_tokenize_fn
+    try:
+        from pythainlp.tokenize import word_tokenize  # type: ignore
+        _thai_tokenize_fn = word_tokenize
+        log.info("pythainlp tokenizer loaded")
+    except Exception as e:
+        log.warning("pythainlp not available: %s", e)
+        _thai_tokenize_failed = True
+    return _thai_tokenize_fn
+
+
+_THAI_RANGE = (0x0E00, 0x0E7F)
+
+
+def _has_thai(s: str) -> bool:
+    return any(_THAI_RANGE[0] <= ord(c) <= _THAI_RANGE[1] for c in s)
+
+
+def insert_thai_word_breaks(text: str) -> str:
+    """Insert spaces between Thai word tokens. Non-Thai segments untouched.
+
+    Whisper Thai output runs words together (no spaces). pythainlp segments
+    with newmm engine; we re-join with single space — readable for copy/paste.
+    """
+    if not text or not _has_thai(text):
+        return text
+    fn = _get_thai_tokenizer()
+    if fn is None:
+        return text
+    try:
+        toks = fn(text, engine="newmm", keep_whitespace=False)
+        joined = " ".join(t for t in toks if t)
+        # Collapse double spaces (existing whitespace + injected)
+        return re.sub(r"\s+", " ", joined).strip()
+    except Exception:
+        log.exception("thai tokenize failed")
+        return text
 
 
 def _resource_path(rel: str) -> str:
@@ -489,6 +541,18 @@ class FloatingWindow:
             )
         menu.add_cascade(label="Model", menu=model_menu)
 
+        lang_menu = tk.Menu(menu, tearoff=0,
+                            bg=COLORS["bg"], fg=COLORS["fg"],
+                            activebackground=COLORS["purple"],
+                            activeforeground="#ffffff")
+        for lc in LANGUAGES:
+            mark = "● " if lc == self.app.language else "   "
+            lang_menu.add_command(
+                label=f"{mark}{LANGUAGE_LABELS[lc]}",
+                command=lambda c=lc: self.app.change_language(c),
+            )
+        menu.add_cascade(label="Language", menu=lang_menu)
+
         hist_menu = tk.Menu(menu, tearoff=0,
                             bg=COLORS["bg"], fg=COLORS["fg"],
                             activebackground=COLORS["purple"],
@@ -506,6 +570,9 @@ class FloatingWindow:
         live_mark = "● " if self.app.live_mode else "   "
         menu.add_command(label=f"{live_mark}Live mode (streaming)",
                          command=self.app.toggle_live_mode)
+        tok_mark = "● " if self.app.tokenize_thai else "   "
+        menu.add_command(label=f"{tok_mark}ตัดคำไทย (Thai word break)",
+                         command=self.app.toggle_tokenize)
         menu.add_command(label=f"Hotkey: {self._hotkey_label}",
                          command=self.app.prompt_hotkey)
         menu.add_separator()
@@ -526,9 +593,11 @@ class LiveTranscriber:
     so they stop being recomputed, and exposes (committed, tentative) text.
     """
 
-    def __init__(self, model: WhisperModel, sample_rate: int = SAMPLE_RATE):
+    def __init__(self, model: WhisperModel, sample_rate: int = SAMPLE_RATE,
+                 language: str | None = "th"):
         self.model = model
         self.sr = sample_rate
+        self.language = language        # None or "auto" -> Whisper detects
         self.committed = ""
         self.tentative = ""
         self.committed_samples = 0      # samples already finalized
@@ -559,9 +628,10 @@ class LiveTranscriber:
             audio = audio[offset_in_full:]
 
         try:
+            lang = None if self.language in (None, "auto") else self.language
             segs, _ = self.model.transcribe(
                 audio,
-                language="th",
+                language=lang,
                 beam_size=1,        # streaming = speed > beam quality
                 vad_filter=True,
                 vad_parameters=dict(min_silence_duration_ms=400),
@@ -604,6 +674,8 @@ class App:
     def __init__(self):
         self.model_name = DEFAULT_MODEL
         self.hotkey = DEFAULT_HOTKEY
+        self.language = DEFAULT_LANGUAGE        # "auto" | "th" | "en"
+        self.tokenize_thai = True               # add spaces between Thai words
         self.state = State.IDLE
         self.lock = threading.Lock()
         self.history: deque = deque(maxlen=HISTORY_MAX)
@@ -732,6 +804,23 @@ class App:
         toast(APP_NAME, f"Model: {name}")
         self.load_model_async()
 
+    def change_language(self, lang: str):
+        if lang not in LANGUAGES or lang == self.language:
+            return
+        self.language = lang
+        if self.live is not None:
+            self.live.language = lang
+        toast(APP_NAME, f"Language: {LANGUAGE_LABELS.get(lang, lang)}")
+
+    def toggle_tokenize(self):
+        self.tokenize_thai = not self.tokenize_thai
+        toast(APP_NAME,
+              f"Thai word break: {'ON' if self.tokenize_thai else 'OFF'}")
+        # Warm tokenizer in background so first toggle->commit isn't laggy
+        if self.tokenize_thai:
+            threading.Thread(target=_get_thai_tokenizer,
+                             name="pythainlp-warmup", daemon=True).start()
+
     # --- Recording ---
     def _audio_callback(self, indata, frames, time_info, status):
         if status:
@@ -781,7 +870,8 @@ class App:
                     if self.model is None:
                         toast(APP_NAME, "Model not ready yet")
                         return
-                    self.live = LiveTranscriber(self.model, SAMPLE_RATE)
+                    self.live = LiveTranscriber(self.model, SAMPLE_RATE,
+                                                language=self.language)
                     self._live_stop.clear()
                     self._live_thread = threading.Thread(
                         target=self._live_worker, name="live-stream", daemon=True)
@@ -823,15 +913,18 @@ class App:
                 toast(APP_NAME, "Recording too short")
                 return
             model = self.get_model()
-            log.info("transcribe start (lang=th beam=5 vad=on)")
+            lang = None if self.language in (None, "auto") else self.language
+            log.info("transcribe start (lang=%s beam=5 vad=on)", lang or "auto")
             segments, _info = model.transcribe(
                 audio,
-                language="th",
+                language=lang,
                 beam_size=5,
                 vad_filter=True,
                 vad_parameters=dict(min_silence_duration_ms=500),
             )
             text = "".join(seg.text for seg in segments).strip()
+            if self.tokenize_thai:
+                text = insert_thai_word_breaks(text)
             log.info("transcribe done, text_len=%d", len(text))
             if not text:
                 toast(APP_NAME, "No speech detected")
@@ -858,7 +951,10 @@ class App:
                 text = self.live.full_text()
                 self.ui(self._apply_live_preview, text)
                 if self.live.committed:
-                    pyperclip.copy(self.live.committed)
+                    out = self.live.committed
+                    if self.tokenize_thai:
+                        out = insert_thai_word_breaks(out)
+                    pyperclip.copy(out)
             except Exception:
                 log.exception("live tick failed")
         log.info("live worker exit")
@@ -868,6 +964,8 @@ class App:
             if self.live is not None:
                 self.live.tick(final=True)
                 text = self.live.full_text()
+                if text and self.tokenize_thai:
+                    text = insert_thai_word_breaks(text)
                 if text:
                     pyperclip.copy(text)
                     self.history.appendleft(text)
