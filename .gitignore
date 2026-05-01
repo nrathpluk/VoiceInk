@@ -13,7 +13,6 @@ env/
 build/
 dist/
 *.spec
-!ThaiVoice.spec
 
 # Build tools (UPX bootstrapped on demand)
 tools/
