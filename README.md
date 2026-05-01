@@ -72,6 +72,3 @@ build.bat
 - [pyperclip](https://github.com/asweigart/pyperclip) — copy ลง clipboard
 - [winotify](https://github.com/versa-syahptr/winotify) — Windows toast notification
 
-## License
-
-MIT
