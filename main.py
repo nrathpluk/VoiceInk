@@ -1,4 +1,5 @@
 """Thai Voice -> Clipboard. Floating capsule window. Hotkey toggles record."""
+import json
 import logging
 import math
 import os
@@ -104,6 +105,11 @@ SAMPLE_RATE = 16000
 HISTORY_MAX = 10
 APP_NAME = "ThaiVoice"
 
+# Settings persistence: %APPDATA%\ThaiVoice\config.json
+CONFIG_DIR = os.path.join(
+    os.environ.get("APPDATA", os.path.expanduser("~")), APP_NAME)
+CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
+
 WIN_W = 320
 WIN_H = 64
 
@@ -188,6 +194,29 @@ def insert_thai_word_breaks(text: str) -> str:
         return text
 
 
+def _read_config() -> dict:
+    try:
+        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except FileNotFoundError:
+        return {}
+    except Exception:
+        log.exception("config read failed")
+        return {}
+
+
+def _write_config(cfg: dict):
+    try:
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        tmp = CONFIG_PATH + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2, ensure_ascii=False)
+        os.replace(tmp, CONFIG_PATH)
+    except Exception:
+        log.exception("config write failed")
+
+
 def _resource_path(rel: str) -> str:
     """Locate bundled resource. Works in dev + PyInstaller frozen."""
     base = getattr(sys, "_MEIPASS", None) or os.path.dirname(os.path.abspath(__file__))
@@ -233,12 +262,18 @@ class FloatingWindow:
         except Exception:
             log.exception("iconbitmap failed")
 
-        # Position bottom-right
+        # Position: saved coords if on-screen, else bottom-right
         self.root.update_idletasks()
         sw = self.root.winfo_screenwidth()
         sh = self.root.winfo_screenheight()
-        x = sw - WIN_W - 24
-        y = sh - WIN_H - 80
+        cfg = getattr(app, "_cfg", {}) or {}
+        sx, sy = cfg.get("window_x"), cfg.get("window_y")
+        if (isinstance(sx, int) and isinstance(sy, int)
+                and -WIN_W < sx < sw and -WIN_H < sy < sh):
+            x, y = sx, sy
+        else:
+            x = sw - WIN_W - 24
+            y = sh - WIN_H - 80
         self.root.geometry(f"{WIN_W}x{WIN_H}+{x}+{y}")
 
         # Visual state
@@ -672,10 +707,14 @@ class LiveTranscriber:
 # ---------- App ----------
 class App:
     def __init__(self):
-        self.model_name = DEFAULT_MODEL
-        self.hotkey = DEFAULT_HOTKEY
-        self.language = DEFAULT_LANGUAGE        # "auto" | "th" | "en"
-        self.tokenize_thai = True               # add spaces between Thai words
+        cfg = _read_config()
+        self._cfg = cfg
+        m = cfg.get("model", DEFAULT_MODEL)
+        self.model_name = m if m in MODELS else DEFAULT_MODEL
+        self.hotkey = cfg.get("hotkey", DEFAULT_HOTKEY) or DEFAULT_HOTKEY
+        lg = cfg.get("language", DEFAULT_LANGUAGE)
+        self.language = lg if lg in LANGUAGES else DEFAULT_LANGUAGE
+        self.tokenize_thai = bool(cfg.get("tokenize_thai", True))
         self.state = State.IDLE
         self.lock = threading.Lock()
         self.history: deque = deque(maxlen=HISTORY_MAX)
@@ -691,10 +730,29 @@ class App:
         self._wave_smooth = [0.0] * WAVE_BARS
         self._wave_phase = 0.0
         # Live streaming
-        self.live_mode = False
+        self.live_mode = bool(cfg.get("live_mode", False))
         self.live: LiveTranscriber | None = None
         self._live_thread: threading.Thread | None = None
         self._live_stop = threading.Event()
+
+    # --- Settings ---
+    def _save_settings(self):
+        cfg = dict(self._cfg) if isinstance(self._cfg, dict) else {}
+        cfg.update(
+            hotkey=self.hotkey,
+            model=self.model_name,
+            language=self.language,
+            tokenize_thai=self.tokenize_thai,
+            live_mode=self.live_mode,
+        )
+        if self.win is not None:
+            try:
+                cfg["window_x"] = int(self.win.root.winfo_x())
+                cfg["window_y"] = int(self.win.root.winfo_y())
+            except Exception:
+                pass
+        self._cfg = cfg
+        _write_config(cfg)
 
     # --- Threadsafe UI helper ---
     def ui(self, fn, *args, **kwargs):
@@ -796,6 +854,7 @@ class App:
             self.win.show_preview(self.live_mode)
             if not self.live_mode:
                 self.win.set_preview("")
+        self._save_settings()
 
     def change_model(self, name: str):
         if name == self.model_name:
@@ -803,6 +862,7 @@ class App:
         self.model_name = name
         toast(APP_NAME, f"Model: {name}")
         self.load_model_async()
+        self._save_settings()
 
     def change_language(self, lang: str):
         if lang not in LANGUAGES or lang == self.language:
@@ -811,6 +871,7 @@ class App:
         if self.live is not None:
             self.live.language = lang
         toast(APP_NAME, f"Language: {LANGUAGE_LABELS.get(lang, lang)}")
+        self._save_settings()
 
     def toggle_tokenize(self):
         self.tokenize_thai = not self.tokenize_thai
@@ -820,6 +881,7 @@ class App:
         if self.tokenize_thai:
             threading.Thread(target=_get_thai_tokenizer,
                              name="pythainlp-warmup", daemon=True).start()
+        self._save_settings()
 
     # --- Recording ---
     def _audio_callback(self, indata, frames, time_info, status):
@@ -1054,6 +1116,7 @@ class App:
         keyboard.add_hotkey(new_hotkey, self.toggle)
         toast(APP_NAME, f"Hotkey: {new_hotkey}")
         self.ui(lambda: self.win.set_hotkey_label(new_hotkey))
+        self._save_settings()
         return True
 
     def prompt_hotkey(self):
@@ -1072,6 +1135,10 @@ class App:
 
     # --- Quit ---
     def quit(self):
+        try:
+            self._save_settings()
+        except Exception:
+            log.exception("save settings on quit failed")
         try:
             keyboard.unhook_all_hotkeys()
         except Exception:
@@ -1095,6 +1162,8 @@ def _main():
     app = App()
     app.win = FloatingWindow(app)
     app.win.set_hotkey_label(app.hotkey)
+    if app.live_mode:
+        app.win.show_preview(True)
 
     try:
         keyboard.add_hotkey(app.hotkey, app.toggle)

@@ -58,8 +58,11 @@ build.bat
 |---|---|---|
 | Hotkey | `ctrl+shift+space` | คลิกขวา → `Hotkey:...` |
 | Model | `base` | คลิกขวา → `Model` |
-| ภาษา | `th` (hardcode) | แก้ `language="th"` ใน `main.py` |
+| ภาษา | `th` | คลิกขวา → `Language` (`auto` / `th` / `en`) |
 | Live mode | ปิด | คลิกขวา → `Live mode (streaming)` |
+| ตัดคำไทย | เปิด | คลิกขวา → `ตัดคำไทย` |
+
+ค่าทุกตัว + ตำแหน่งหน้าต่าง บันทึกที่ `%APPDATA%\ThaiVoice\config.json` อัตโนมัติ
 
 ครั้งแรกของแต่ละ model จะ download อัตโนมัติ (~75MB ถึง ~3GB) เก็บที่ `%USERPROFILE%\.cache\huggingface\`
 
@@ -71,4 +74,8 @@ build.bat
 - [keyboard](https://github.com/boppreh/keyboard) — global hotkey
 - [pyperclip](https://github.com/asweigart/pyperclip) — copy ลง clipboard
 - [winotify](https://github.com/versa-syahptr/winotify) — Windows toast notification
+
+## License
+
+MIT — ดู [`LICENSE`](LICENSE)
 
