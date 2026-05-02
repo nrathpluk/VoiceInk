@@ -1,8 +1,9 @@
 """Generate icon.ico for ThaiVoice. Purple circle + 3 white equalizer bars."""
+
 from PIL import Image, ImageDraw
 
 SIZE = 256
-BG = (108, 99, 255, 255)        # #6C63FF
+BG = (108, 99, 255, 255)  # #6C63FF
 FG = (255, 255, 255, 255)
 
 

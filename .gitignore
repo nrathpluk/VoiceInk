@@ -13,6 +13,7 @@ env/
 build/
 dist/
 *.spec
+!ThaiVoice.spec   # this one IS hand-edited and committed
 
 # Build tools (UPX bootstrapped on demand)
 tools/
@@ -45,3 +46,10 @@ huggingface/
 *.swp
 .DS_Store
 Thumbs.db
+
+# Backups (e.g. main.py.original from refactors)
+*.original
+*.original.md
+
+# Installer output
+ThaiVoice-Setup-*.exe

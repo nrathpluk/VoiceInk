@@ -1,0 +1,35 @@
+[project]
+name = "thaivoice"
+version = "0.1.0"
+description = "Thai voice -> clipboard via Whisper. Floating capsule HUD."
+requires-python = ">=3.10"
+authors = [{ name = "nrathpluk" }]
+license = { text = "MIT" }
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["build", "dist", "tools", "__pycache__"]
+
+[tool.ruff.lint]
+# Enable: pycodestyle errors+warnings, pyflakes, isort, bugbear, comprehensions, simplify
+select = ["E", "W", "F", "I", "B", "C4", "SIM", "UP"]
+ignore = [
+    "E501",   # line too long — Thai comments often run long; rely on formatter for code
+    "E402",   # module-level import not at top — log_setup MUST be first, by design
+    "B008",   # function call in default arg — sd InputStream pattern is fine
+    "SIM105", # contextlib.suppress vs try/except pass — try/except is more explicit here
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]
+"make_icon.py" = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-q"

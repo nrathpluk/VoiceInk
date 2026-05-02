@@ -1,5 +1,7 @@
 # ThaiVoice
 
+[![CI](https://github.com/nrathpluk/VoiceInk/actions/workflows/ci.yml/badge.svg)](https://github.com/nrathpluk/VoiceInk/actions/workflows/ci.yml)
+
 แอปถอดเสียงไทยเป็นข้อความ สำหรับ Windows ที่ทำอันนี้ออกมาเพราะว่าบางทีผมขี้เกียจพิมพ์แล้วก็เวลาผมทำอะไรผมชอบอธิบายเป็นคำพูดมากกว่า
 
 <!-- TODO: ใส่ GIF / screenshot ที่นี่ -->
@@ -41,6 +43,14 @@ build.bat
 ```
 
 ได้ไฟล์ `dist\ThaiVoice.exe` — single file, ไม่เปิด console
+
+### Installer (optional)
+
+หลังจาก `build.bat` แล้ว ถ้าอยาก installer (.exe ที่ register Start Menu + Add/Remove Programs):
+
+1. ลง [Inno Setup 6+](https://jrsoftware.org/isinfo.php)
+2. รัน `build_installer.bat`
+3. ได้ไฟล์ `dist\ThaiVoice-Setup-0.1.0.exe`
 
 ## วิธีใช้
 
