@@ -1,4 +1,4 @@
-"""Log + stream guard. MUST be first import in main.py.
+"""Log + stream guard. MUST be first import in src/app/main.py.
 
 Under PyInstaller --noconsole, sys.stdout/sys.stderr are None. Any 3rd-party
 write (tqdm in faster-whisper, hf_hub) crashes silently. Redirect early.
@@ -15,7 +15,10 @@ def _resolve_log_dir():
     if getattr(sys, "frozen", False):
         primary = os.path.dirname(sys.executable)
     else:
-        primary = os.path.dirname(os.path.abspath(__file__))
+        # Dev: project root = three parents up from src/app/utils/log_setup.py
+        primary = os.path.abspath(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..")
+        )
     for candidate in (
         primary,
         os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "ThaiVoice"),

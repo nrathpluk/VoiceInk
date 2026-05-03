@@ -5,8 +5,8 @@ import re
 import sys
 from enum import Enum
 
-from constants import APP_NAME
-from log_setup import log
+from app.core.constants import APP_NAME
+from app.utils.log_setup import log
 
 try:
     from winotify import Notification
@@ -66,7 +66,13 @@ def insert_thai_word_breaks(text: str) -> str:
 
 def _resource_path(rel: str) -> str:
     """Locate bundled resource. Works in dev + PyInstaller frozen."""
-    base = getattr(sys, "_MEIPASS", None) or os.path.dirname(os.path.abspath(__file__))
+    if getattr(sys, "frozen", False):
+        base = getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
+    else:
+        # Dev: resources live at project root (two parents up from app/utils)
+        base = os.path.abspath(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..")
+        )
     return os.path.join(base, rel)
 
 

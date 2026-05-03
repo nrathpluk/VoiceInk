@@ -7,8 +7,8 @@ import json
 import urllib.error
 import urllib.request
 
-from constants import APP_REPO, VERSION
-from log_setup import log
+from app.core.constants import APP_REPO, VERSION
+from app.utils.log_setup import log
 
 _API_URL = f"https://api.github.com/repos/{APP_REPO}/releases/latest"
 _TIMEOUT_S = 5.0

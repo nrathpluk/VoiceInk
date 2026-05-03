@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 
-import audio
+from app.services import audio
 
 
 def test_stop_with_no_frames_returns_empty_array():

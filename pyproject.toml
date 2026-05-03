@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "thaivoice"
 version = "0.1.0"
@@ -5,6 +9,12 @@ description = "Thai voice -> clipboard via Whisper. Floating capsule HUD."
 requires-python = ">=3.10"
 authors = [{ name = "nrathpluk" }]
 license = { text = "MIT" }
+
+[project.scripts]
+thaivoice = "app.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.ruff]
 line-length = 100
@@ -23,7 +33,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E501"]
-"make_icon.py" = ["E501"]
+"scripts/make_icon.py" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -32,4 +42,5 @@ indent-style = "space"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+pythonpath = ["src"]
 addopts = "-q"

@@ -1,6 +1,7 @@
 ; Inno Setup script for ThaiVoice
-; Compile: ISCC.exe installer.iss
-; Or run: build_installer.bat (after build.bat produced dist\ThaiVoice.exe)
+; Compile: ISCC.exe packaging\installer.iss
+; Or run: packaging\build_installer.bat (after scripts\build.bat produced dist\ThaiVoice.exe)
+; All source paths in this file are relative to packaging/ (the .iss location).
 
 #define AppName        "ThaiVoice"
 #define AppVersion     "0.1.0"
@@ -21,7 +22,7 @@ DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
-OutputDir=dist
+OutputDir=..\dist
 OutputBaseFilename=ThaiVoice-Setup-{#AppVersion}
 SetupIconFile=icon.ico
 Compression=lzma2/ultra64
@@ -42,9 +43,9 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "startmenuicon"; Description: "Create Start Menu shortcut"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
-Source: "dist\{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "LICENSE"; DestDir: "{app}"; Flags: ignoreversion
-Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: startmenuicon

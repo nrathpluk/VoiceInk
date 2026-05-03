@@ -1,8 +1,8 @@
-"""Pytest fixtures + path setup so tests can import project modules."""
+"""Pytest fixtures + path setup so tests can import the `app` package."""
 
 import sys
 from pathlib import Path
 
-# Add project root to sys.path so `from util import ...` works in tests
-ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT))
+# Add src/ to sys.path so `from app.* import ...` works in tests
+SRC = Path(__file__).parent.parent / "src"
+sys.path.insert(0, str(SRC))

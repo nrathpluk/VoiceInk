@@ -1,6 +1,6 @@
 """Tests for util.py — Thai tokenizer + State enum."""
 
-from util import State, _has_thai, insert_thai_word_breaks
+from app.utils.util import State, _has_thai, insert_thai_word_breaks
 
 
 def test_state_enum_values():

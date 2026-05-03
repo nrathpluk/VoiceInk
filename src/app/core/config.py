@@ -3,8 +3,8 @@
 import json
 import os
 
-from constants import APP_NAME
-from log_setup import log
+from app.core.constants import APP_NAME
+from app.utils.log_setup import log
 
 CONFIG_DIR = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), APP_NAME)
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")

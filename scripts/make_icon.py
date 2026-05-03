@@ -1,6 +1,11 @@
-"""Generate icon.ico for ThaiVoice. Purple circle + 3 white equalizer bars."""
+"""Generate packaging/icon.ico for ThaiVoice. Purple circle + 3 white equalizer bars."""
+
+import os
 
 from PIL import Image, ImageDraw
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_OUT = os.path.abspath(os.path.join(_HERE, "..", "packaging", "icon.ico"))
 
 SIZE = 256
 BG = (108, 99, 255, 255)  # #6C63FF
@@ -40,12 +45,13 @@ def render(size: int) -> Image.Image:
 def main():
     base = render(SIZE)
     sizes = [16, 24, 32, 48, 64, 128, 256]
+    os.makedirs(os.path.dirname(_OUT), exist_ok=True)
     base.save(
-        "icon.ico",
+        _OUT,
         format="ICO",
         sizes=[(s, s) for s in sizes],
     )
-    print("wrote icon.ico")
+    print(f"wrote {_OUT}")
 
 
 if __name__ == "__main__":

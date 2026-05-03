@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 
-import transcribe
-from transcribe import LiveTranscriber
+from app.services import transcribe
+from app.services.transcribe import LiveTranscriber
 
 
 class _FakeSegment:

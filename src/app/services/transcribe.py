@@ -5,8 +5,8 @@ import threading
 import numpy as np
 from faster_whisper import WhisperModel
 
-from constants import LIVE_COMMIT_TAIL_S, LIVE_WINDOW_S, SAMPLE_RATE
-from log_setup import log
+from app.core.constants import LIVE_COMMIT_TAIL_S, LIVE_WINDOW_S, SAMPLE_RATE
+from app.utils.log_setup import log
 
 
 def load_whisper_model(name: str) -> WhisperModel:

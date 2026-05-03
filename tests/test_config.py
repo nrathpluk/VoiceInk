@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-import config
+from app.core import config
 
 
 def test_write_then_read_roundtrip(tmp_path: Path, monkeypatch):

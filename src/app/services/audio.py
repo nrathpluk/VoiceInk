@@ -10,8 +10,8 @@ from collections.abc import Callable
 import numpy as np
 import sounddevice as sd
 
-from constants import SAMPLE_RATE
-from log_setup import log
+from app.core.constants import SAMPLE_RATE
+from app.utils.log_setup import log
 
 
 class AudioRecorder:

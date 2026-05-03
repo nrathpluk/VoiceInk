@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import pyperclip
 
-from constants import (
+from app.core.constants import (
     APP_NAME,
     CAPSULE_RADIUS,
     COLORS,
@@ -28,11 +28,11 @@ from constants import (
     WIN_H,
     WIN_W,
 )
-from log_setup import log
-from util import State, _resource_path
+from app.utils.log_setup import log
+from app.utils.util import State, _resource_path
 
 if TYPE_CHECKING:
-    from main import App
+    from app.main import App
 
 
 class FloatingWindow:

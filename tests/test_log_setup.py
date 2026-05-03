@@ -2,7 +2,7 @@
 
 import os
 
-from log_setup import LOG_PATH, _resolve_log_dir
+from app.utils.log_setup import LOG_PATH, _resolve_log_dir
 
 
 def test_resolve_log_dir_returns_writable():

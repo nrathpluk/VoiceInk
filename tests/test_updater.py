@@ -1,6 +1,6 @@
 """Tests for updater.py — version compare logic only (no network)."""
 
-from updater import _normalize, is_newer
+from app.services.updater import _normalize, is_newer
 
 
 def test_normalize_v_prefix():
