@@ -59,13 +59,13 @@ Cross-thread UI updates **must** go through `App.ui(fn, *args)` which marshals v
 
 ### Model load fallback chain
 
-`load_whisper_model(name)` in `transcribe.py`: tries `WhisperModel(name, device="auto", compute_type="auto")` → on exception → `device="cpu", compute_type="int8"`. Auto picks GPU+float16 when CUDA available, else CPU+float32. CPU/int8 fallback covers GPU OOM and missing CUDA DLLs (see DESIGN_NOTES §7). `App._load_model_worker` calls `load_whisper_model` from a background thread; UI never blocks.
+`load_whisper_model(name)` in `transcribe.py`: tries `WhisperModel(name, device="cpu", compute_type="int8")` first → on exception → `device="auto", compute_type="auto"`. CPU/int8 is the primary path because ctranslate2's CUDA init in frozen (PyInstaller) builds can trigger C-level crashes before Python's exception handler runs. Auto fallback enables GPU when available. `App._load_model_worker` calls `load_whisper_model` from a background thread; UI never blocks.
 
 ### Build (`ThaiVoice.spec`)
 
 - `collect_all('faster_whisper')` + `collect_all('ctranslate2')` — both ship data files / DLLs PyInstaller can't autodetect.
 - CUDA/GPU DLLs are filtered out post-collect via `_is_cuda_blob` (prefixes: `cublas`, `cudart`, `cudnn`, `cufft`, `nvrtc`, …). App is CPU-only by design; CUDA bits cost ~30–60 MB.
-- UPX compresses everything **except** `.pyd` files (UPX corrupts Python ext modules), `pythonNNN.dll`, and CRT/`api-ms-win-*` DLLs — see `_upx_exclude` build (auto-populated from `a.binaries`).
+- UPX compresses everything **except** `.pyd` files (UPX corrupts Python ext modules), `pythonNNN.dll`, CRT/`api-ms-win-*` DLLs, `ctranslate2.dll`, and `libiomp5md.dll`. The last two are Intel C++ DLLs loaded via `ctypes.CDLL` by ctranslate2's `__init__.py`; UPX-compressed versions cause silent C-level crashes on Windows 11 when loaded this way even though UPX integrity test passes. See `_upx_exclude` (auto-populated from `a.binaries`).
 - `excludes` strips deadweight stdlib/test packages.
 - `hiddenimports=['winotify']` because `winotify` import is sometimes invisible to PyInstaller. (Local modules `log_setup`, `constants`, `util`, `config`, `audio`, `transcribe`, `ui_capsule` are direct imports of `main.py` — PyInstaller picks them up via the script entrypoint, so no hiddenimport entries needed.)
 

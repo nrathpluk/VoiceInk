@@ -10,19 +10,22 @@ from app.utils.log_setup import log
 
 
 def load_whisper_model(name: str) -> WhisperModel:
-    """Load WhisperModel with auto -> cpu/int8 fallback. Raises on total failure.
+    """Load WhisperModel with cpu/int8 first, auto fallback if available.
 
-    Auto picks GPU+float16 when CUDA available, else CPU+float32.
-    CPU/int8 fallback covers GPU OOM and missing CUDA DLLs.
+    Starts with CPU to avoid silent C-level crashes from CUDA init failures
+    in frozen (PyInstaller) builds. Auto device tried second if CPU fails.
     """
+    import ctranslate2 as _ct2
+    log.info("ct2 version=%s", _ct2.__version__)
+
     try:
-        m = WhisperModel(name, device="auto", compute_type="auto")
-        log.info("Model loaded: device=auto compute=auto")
-        return m
-    except Exception as e:
-        log.warning("auto load failed: %s — retry CPU/int8", e)
         m = WhisperModel(name, device="cpu", compute_type="int8")
         log.info("Model loaded: device=cpu compute=int8")
+        return m
+    except Exception as e:
+        log.warning("cpu/int8 load failed: %s — retry auto", e)
+        m = WhisperModel(name, device="auto", compute_type="auto")
+        log.info("Model loaded: device=auto compute=auto")
         return m
 
 
